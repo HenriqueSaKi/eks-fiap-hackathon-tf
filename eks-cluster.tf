@@ -14,69 +14,87 @@ resource "aws_iam_role" "eks_service_role" {
   })
 }
 
-resource "aws_iam_role" "eks_node_role" {
-  name = "eks-node-role"
-  assume_role_policy = jsonencode({
+resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
+  role       = aws_iam_role.eks_service_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+}
+
+resource "aws_iam_role_policy_attachment" "eks_vpc_controller_policy" {
+  role       = aws_iam_role.eks_service_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSVPCResourceController"
+}
+
+resource "aws_iam_policy" "eks_policy" {
+  name        = "eks_policy"
+  description = "Policy for EKS cluster access"
+  policy      = jsonencode({
     Version = "2012-10-17",
     Statement = [
       {
-        Action    = "sts:AssumeRole",
-        Effect    = "Allow",
-        Principal = {
-          Service = "ec2.amazonaws.com"
-        }
+        Action   = [
+          "eks:DescribeCluster",
+          "eks:ListClusters",
+          "eks:AccessKubernetesApi"
+        ],
+        Effect   = "Allow",
+        Resource = "*"
       }
     ]
   })
 }
 
-# cluster EKS
+resource "aws_eks_access_policy_association" "eks-policy" {
+  cluster_name  = aws_eks_cluster.fiap_cluster.name
+  policy_arn    = var.policyArn
+  principal_arn = data.aws_iam_role.eks_service_role.arn
+
+  access_scope {
+    type = "cluster"
+  }
+}
+
 resource "aws_eks_cluster" "fiap_cluster" {
   name     = "EKS-${var.appName}"
-  role_arn = aws_iam_role.eks_service_role.arn
+  role_arn = data.aws_iam_role.eks_service_role.arn
 
   vpc_config {
     subnet_ids = [
-      for subnet in data.aws_subnet.subnet : subnet.id
-      if (
-        data.aws_subnet.subnet[subnet.id].availability_zone == "us-east-1a" ||
-        data.aws_subnet.subnet[subnet.id].availability_zone == "us-east-1b" ||
-        data.aws_subnet.subnet[subnet.id].availability_zone == "us-east-1c" ||
-        data.aws_subnet.subnet[subnet.id].availability_zone == "us-east-1d"
+      for subnet in data.aws_subnet.subnet :
+      subnet.id if (
+        subnet.availability_zone == "us-east-1a" ||
+        subnet.availability_zone == "us-east-1b" ||
+        subnet.availability_zone == "us-east-1c"
       )
     ]
-    security_group_ids = [aws_security_group.sg.id]
+    security_group_ids = [aws_security_group.eks_sg.id]
   }
 
   access_config {
     authentication_mode = var.authMode
   }
+
+  depends_on = [
+    aws_nat_gateway.nat_gateway,
+    aws_internet_gateway.internet_gateway,
+    aws_route_table.private_route_table
+  ]
 }
 
-resource "aws_eks_node_group" "fiap_node_group" {
-  cluster_name    = aws_eks_cluster.fiap_cluster.name
-  node_group_name = "NG-${var.appName}"
-  node_role_arn   = aws_iam_role.eks_node_role.arn
+resource "aws_eks_addon" "vpc_cni_addon" {
+  cluster_name             = aws_eks_cluster.fiap_cluster.name
+  addon_name               = "vpc-cni"
+  service_account_role_arn = aws_iam_role.eks_service_role.arn
+  resolve_conflicts_on_create = "OVERWRITE"
+  resolve_conflicts_on_update = "OVERWRITE"
+  addon_version = "v1.19.0-eksbuild.1"
 
-  subnet_ids = [
-      for subnet in data.aws_subnet.subnet : subnet.id
-      if (
-        data.aws_subnet.subnet[subnet.id].availability_zone == "us-east-1a" ||
-        data.aws_subnet.subnet[subnet.id].availability_zone == "us-east-1b" ||
-        data.aws_subnet.subnet[subnet.id].availability_zone == "us-east-1c" ||
-        data.aws_subnet.subnet[subnet.id].availability_zone == "us-east-1d"
-      )
-    ]
-  instance_types = [var.instanceType]
-  disk_size      = 50
-
-  scaling_config {
-    desired_size = 2
-    max_size     = 5
-    min_size     = 2
-  }
-
-  update_config {
-    max_unavailable = 1
+  timeouts {
+    create = "60m"  # Aumenta o tempo de criação para 60 minutos
   }
 }
+
+resource "aws_iam_role_policy_attachment" "vpc_cni_policy_attachment" {
+  role       = aws_iam_role.eks_service_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+}
+
