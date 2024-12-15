@@ -46,18 +46,13 @@ jobs:
       - name: Update Kube Config
         run: aws eks update-kubeconfig --name EKS-fiap-tech-challenge --region us-east-1
 
-      # - name: Debug Kubeconfig
-      #   run: |
-      #     echo "Kubeconfig location: $KUBECONFIG"
-      #     cat ~/.kube/config
-
       - name: Deploy Application
         run: |
-          kubectl apply -f k8s/00-ns-lanchonete.yaml
-          kubectl apply -f k8s/10-secret-lanchonete.yaml
-          kubectl apply -f k8s/11-app-lanchonete-configmap.yaml
-          kubectl apply -f k8s/21-app-lanchonete-service.yaml
-          kubectl apply -f k8s/41-app-lanchonete-deployment.yaml
+          kubectl apply -f k8s/00-ns-lanchonete.yaml --validate=false
+          kubectl apply -f k8s/10-secret-lanchonete.yaml --validate=false
+          kubectl apply -f k8s/11-app-lanchonete-configmap.yaml --validate=false
+          kubectl apply -f k8s/21-app-lanchonete-service.yaml --validate=false
+          kubectl apply -f k8s/41-app-lanchonete-deployment.yaml --validate=false
 
       # Terraform destroy
       - name: Terraform Destroy
