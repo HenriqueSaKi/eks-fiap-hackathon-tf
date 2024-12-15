@@ -1,8 +1,5 @@
 data "aws_vpc" "vpc" {
-  filter {
-    name   = "cidr-block"
-    values = [var.cidrBlocks]
-  }
+  cidr_block = var.vpcCidr
 }
 
 data "aws_subnets" "subnets" {
@@ -17,6 +14,6 @@ data "aws_subnet" "subnet" {
   id       = each.value
 }
 
-data "aws_iam_role" "eks_service_role" {
-  name = aws_iam_role.eks_service_role.name
+data "aws_iam_role" "labrole" {
+  name = "LabRole"
 }
