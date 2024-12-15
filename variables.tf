@@ -14,7 +14,9 @@ variable "instanceType" {
   default = "t3a.medium"
 }
 
-variable "accountIdVoclabs" {}
+variable "accountIdVoclabs" {
+  default = "489247846468"
+}
 
 variable "authMode" {
   default = "API_AND_CONFIG_MAP"
