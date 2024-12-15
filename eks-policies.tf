@@ -9,9 +9,9 @@ resource "aws_iam_policy" "policy_custom" {
         Action = [
           "ec2:DescribeVpcs",
           "iam:GetRole",
-          "eks:AccessKubernetesApi"
+          "eks:AccessKubernetesApi",
           "eks:DescribeCluster",
-          "eks:ListClusters",
+          "eks:ListClusters"
         ]
         Resource = "*"
       },
