@@ -4,8 +4,8 @@ metadata:
   name: aws-auth
   namespace: kube-system
 data:
-  mapRoles: |
-    - rolearn: arn:aws:iam::180294201352:role/eks-service-role
-      username: eks-admin
-      groups:
+  mapUsers: |
+    - userarn: arn:aws:sts::489247846468:assumed-role/voclabs/user3713687=satoshikisaki@hotmail.com
+    username: admin
+    groups:
         - system:masters
