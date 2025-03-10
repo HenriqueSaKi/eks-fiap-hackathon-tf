@@ -3,7 +3,7 @@ variable "region" {
 }
 
 variable "projectName" {
-  default = "fiap-tech-challenge"
+  default = "FIAP-Hackathon"
 }
 
 variable "vpcCidr" {
@@ -15,7 +15,7 @@ variable "instanceType" {
 }
 
 variable "accountIdVoclabs" {
-  default = "071989740414"
+  default = "345124661122"
 }
 
 variable "authMode" {
